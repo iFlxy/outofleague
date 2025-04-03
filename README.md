@@ -16,6 +16,7 @@ pip install -r requirements.txt
 Execute in the outofleague directory:
 
 ```bash
+export BOT_TOKEN=INSERT_YOUR_BOT_TOKEN_HERE
 source venv/bin/activate
 python main.py
 ```
