@@ -17,6 +17,7 @@ Execute in the outofleague directory:
 
 ```bash
 export BOT_TOKEN=INSERT_YOUR_BOT_TOKEN_HERE
+cd src
 source venv/bin/activate
 python main.py
 ```
