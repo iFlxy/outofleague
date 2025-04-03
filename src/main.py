@@ -5,8 +5,11 @@ from discord.ui import Modal, TextInput, View, ChannelSelect
 import os
 import os.path
 import json
+import datetime
+from discord.ext import tasks
 
 token = os.getenv("BOT_TOKEN")
+muted_users = {}
 
 CONFIG_FILE = "serverdata.json"
 
@@ -78,6 +81,8 @@ def help_embed(title: str):
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.presences = True
+intents.members = True
 
 client = discord.Client(intents=intents)
 
@@ -270,6 +275,70 @@ async def on_message(message):
         embed.set_footer(text="OutOfLeague")
 
         await message.channel.send(embed=embed, view=PenaltyView(message.author.id))
+
+@client.event
+async def on_presence_update(before: discord.Member, after: discord.Member):
+    if before.activities != after.activities:
+        for activity in after.activities:
+            print(activity)
+            if activity.name == "League of Legends":
+                guild_id = after.guild.id if after.guild else None
+                if guild_id and config_manager.get_guild_value(guild_id, "active", None) == "on":
+                    match config_manager.get_guild_value(guild_id, "action", None):
+                        case "ban":
+                            await after.ban(reason=config_manager.get_guild_value(guild_id, "action_message", "unknown"))
+                            ending = "banned"
+                        case "kick":
+                            await after.kick(reason=config_manager.get_guild_value(guild_id, "action_message", "unknown"))
+                            ending = "kicked"
+                        case "mute":
+                            await mute_user(after)
+                            ending = "muted"
+
+                    embed = discord.Embed(
+                        title="LOG: Action",
+                        description=f"An action has been taken against the user {after.name}: User {ending}.",
+                        colour=0xee0000,
+                        timestamp=datetime.datetime.now()
+                    )
+
+                    embed.set_author(name="OutOfLeague")
+                    embed.set_footer(text="Logging")
+
+                    log_channel_id = config_manager.get_guild_value(guild_id, "log_channel")
+                    if log_channel_id:
+                        await client.get_channel(log_channel_id).send(embed=embed)
+
+async def mute_user(user):
+    if user not in muted_users:
+        muted_users[user] = True
+        check_muted_users.start()
+
+    if config_manager.get_guild_value(user.guild.id, "active", None) == "on":
+        await user.timeout(datetime.timedelta(seconds=45), reason=config_manager.get_guild_value(user.guild.id, "action_message", "unknown"))
+
+@tasks.loop(seconds=30)
+async def check_muted_users():
+    if not muted_users:
+        check_muted_users.stop()
+
+    to_remove = []
+
+    for member in list(muted_users.keys()):
+        if not member:
+            to_remove.append(member)
+            continue
+
+        for activity in member.activities:
+            if activity.name == "League of Legends":
+                await mute_user(member)
+                break
+        else:
+            to_remove.append(member)
+
+    for member in to_remove:
+        muted_users.pop(member, None)
+
 
 
 client.run(token)
