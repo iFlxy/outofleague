@@ -123,6 +123,7 @@ class ChannelSelectionView(discord.ui.View):
 
         message = await self.emsgc.fetch_message(self.emsg)
         await message.edit(embed=embed, view=None)
+        config_manager.set_guild_config(message.guild.id, "active", "on")
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         return interaction.user.id == self.author_id
@@ -214,6 +215,45 @@ class PenaltyView(discord.ui.View):
 async def on_message(message):
     if message.author == client.user:
         return
+
+    if not message.author.guild_permissions.administrator:
+        await message.channel.send("You need administrator permissions to use this command.")
+        return
+
+    elif message.content.startswith("l!setpenalty"):
+        parts = message.content.split()
+        if len(parts) > 1 and parts[1] in ["ban", "kick", "mute"]:
+            await message.channel.send(f"Penalty set to {parts[1]}.")
+            config_manager.set_guild_config(message.guild.id, "action", parts[1])
+        else:
+            await message.channel.send("Invalid penalty type. Use 'ban', 'kick', or 'mute'.")
+
+    elif message.content.startswith("l!setlogs"):
+        parts = message.content.split()
+        if len(message.channel_mentions) > 0:
+            logs_channel = message.channel_mentions[0].id
+            await message.channel.send(f"Logs channel set to <#{logs_channel}>.")
+        else:
+            await message.channel.send("Please mention a channel. Make sure it's highlighted.")
+
+    elif message.content.startswith("l!setmessage"):
+        parts = message.content.split(maxsplit=1)
+        if len(parts) > 1:
+            if len(parts[1]) <= 128:
+                await message.channel.send(f"Penalty message updated to: {parts[1]}")
+                config_manager.set_guild_config(message.guild.id, "action_message", parts[1])
+            else:
+                await message.channel.send("Message too long!")
+        else:
+            await message.channel.send("Please provide a message.")
+
+    elif message.content.startswith("l!toggle"):
+        parts = message.content.split()
+        if len(parts) > 1 and parts[1] in ["on", "off"]:
+            await message.channel.send(f"Bot turned {parts[1]}.")
+            config_manager.set_guild_config(message.guild.id, "active", parts[1])
+        else:
+            await message.channel.send("Invalid option. Use 'on' or 'off'.")
 
     if message.content.startswith('l!help'):
         await message.channel.send(embed=help_embed("Avaliable commands:"))
