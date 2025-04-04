@@ -280,7 +280,6 @@ async def on_message(message):
 async def on_presence_update(before: discord.Member, after: discord.Member):
     if before.activities != after.activities:
         for activity in after.activities:
-            print(activity)
             if activity.name == "League of Legends":
                 guild_id = after.guild.id if after.guild else None
                 if guild_id and config_manager.get_guild_value(guild_id, "active", None) == "on":
