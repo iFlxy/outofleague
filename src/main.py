@@ -222,7 +222,6 @@ async def on_message(message):
         return
 
     if not message.author.guild_permissions.administrator:
-        await message.channel.send("You need administrator permissions to use this command.")
         return
 
     elif message.content.startswith("l!setpenalty"):
