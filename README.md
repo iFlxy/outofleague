@@ -8,6 +8,7 @@ Prevent corruption on your Discord server by taking actions against League Of Le
 git clone https://github.com/iFlxy/outofleague.git
 cd outofleague
 python -m venv venv
+source venv/bin/activate
 pip install -r requirements.txt
 ```
 
@@ -16,9 +17,10 @@ pip install -r requirements.txt
 Execute in the outofleague directory:
 
 ```bash
+cd outofleague
 export BOT_TOKEN=INSERT_YOUR_BOT_TOKEN_HERE
-cd src
 source venv/bin/activate
+cd src
 python main.py
 ```
 
